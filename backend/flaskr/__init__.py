@@ -13,7 +13,7 @@ def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__)
     setup_db(app)
-    CORS(app)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     def after_request(response):
         response.headers.add(
@@ -23,6 +23,27 @@ def create_app(test_config=None):
             "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS"
         )
         return response
+
+    def paginate_questions(request, selection):
+        page = request.args.get("page", 1, type=int)
+        start = (page - 1) * QUESTIONS_PER_PAGE
+        end = start + QUESTIONS_PER_PAGE
+
+        questions = [question.format() for question in selection]
+        current_questions = questions[start:end]
+
+        return current_questions
+
+    @app.route("/categories")
+    def retrieve_categories():
+        selection = Category.query.order_by(Category.id).all()
+        return jsonify(
+            {
+                "success": True,
+                "categories": [category.format() for category in selection],
+                "total_categories": len(selection),
+            }
+        )
 
     @app.route("/")
     def root():
