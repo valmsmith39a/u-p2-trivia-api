@@ -49,11 +49,31 @@ def create_app(test_config=None):
     def retrieve_questions():
         selection = Question.query.order_by(Question.id).all()
         current_questions = paginate_questions(request, selection)
-        return jsonify({
-            "success": True,
-            "questions": current_questions,
-            "total_questions": len(selection)
-        })
+        return jsonify(
+            {
+                "success": True,
+                "questions": current_questions,
+                "total_questions": len(selection),
+            }
+        )
+
+    @app.route("/questions/<int:question_id>", methods=["DELETE"])
+    def delete_question(question_id):
+        try:
+            question = Question.query.filter(question_id == Question.id).one_or_none()
+            question.delete()
+            selection = Question.query.order_by(Question.id).all()
+            current_questions = paginate_questions(request, selection)
+            return jsonify(
+                {
+                    "success": True,
+                    "deleted": question_id,
+                    "questions": current_questions,
+                    "total_questions": len(current_questions),
+                }
+            )
+        except:
+            abort(422)
 
     @app.route("/")
     def root():
