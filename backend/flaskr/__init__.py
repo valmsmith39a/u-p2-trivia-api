@@ -45,6 +45,16 @@ def create_app(test_config=None):
             }
         )
 
+    @app.route("/questions")
+    def retrieve_questions():
+        selection = Question.query.order_by(Question.id).all()
+        current_questions = paginate_questions(request, selection)
+        return jsonify({
+            "success": True,
+            "questions": current_questions,
+            "total_questions": len(selection)
+        })
+
     @app.route("/")
     def root():
         return "hello universe"

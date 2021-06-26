@@ -7,7 +7,7 @@
 """
 
 """
-	@TODO: 
+	@TODO: DONE 
 	Create an endpoint to handle GET requests 
 	for all available categories.
 """
