@@ -61,7 +61,7 @@ def create_app(test_config=None):
     def delete_question(question_id):
         try:
             question = Question.query.filter(question_id == Question.id).one_or_none()
-            question.delete()
+            # question.delete()
             selection = Question.query.order_by(Question.id).all()
             current_questions = paginate_questions(request, selection)
             return jsonify(
@@ -72,6 +72,40 @@ def create_app(test_config=None):
                     "total_questions": len(current_questions),
                 }
             )
+        except:
+            abort(422)
+
+    @app.route("/questions", methods=["POST"])
+    def create_question():
+        body = request.form
+
+        question = body.get("question", None)
+        answer = body.get("answer", None)
+        difficulty = body.get("difficulty", None)
+        category = body.get("category", None)
+
+        try:
+            new_question = Question(
+                question=question,
+                answer=answer,
+                category=category,
+                difficulty=difficulty,
+            )
+
+            new_question.insert()
+            selection = Question.query.order_by(Question.id).all()
+            current_questions = paginate_questions(request, selection)
+
+            return jsonify(
+                {
+                    "success": True,
+                    "new_question_test": new_question.format(),
+                    "created": new_question.id,
+                    "questions": current_questions,
+                    "total_questions": len(selection),
+                }
+            )
+
         except:
             abort(422)
 

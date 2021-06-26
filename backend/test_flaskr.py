@@ -14,6 +14,7 @@ class TriviaTestCase(unittest.TestCase):
         """Define test variables and initialize app."""
         self.app = create_app()
         self.client = self.app.test_client
+        print("what is client", self.client())
         self.database_name = "trivia_test"
         self.database_path = os.getenv("SQL_URI")
         setup_db(self.app, self.database_path)
@@ -57,6 +58,14 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["success"], True)
         self.assertEqual(data["deleted"], 18)
         self.assertTrue(len(data["questions"]))
+        self.assertTrue(data["total_questions"])
+
+    def test_create_question(self):
+        res = self.client().post("/questions", json=self.new_question)
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data["success"], True)
+        self.assertEqual(data["created"], 25)
         self.assertTrue(data["total_questions"])
 
         # Make the tests conveniently executable
