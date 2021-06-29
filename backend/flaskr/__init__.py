@@ -99,7 +99,6 @@ def create_app(test_config=None):
             return jsonify(
                 {
                     "success": True,
-                    "new_question_test": new_question.format(),
                     "created": new_question.id,
                     "questions": current_questions,
                     "total_questions": len(selection),
@@ -108,6 +107,17 @@ def create_app(test_config=None):
 
         except:
             abort(422)
+
+    @app.route("/categories/<int:category_id>/questions")
+    def retrieve_question_with_category(category_id):
+        selection = Question.query.filter(category_id == Question.category).all()
+        return jsonify(
+            {
+                "success": True,
+                "questions": [question.format() for question in selection],
+                "total_questions": len(selection),
+            }
+        )
 
     @app.route("/")
     def root():
