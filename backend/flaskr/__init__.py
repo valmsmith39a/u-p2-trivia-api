@@ -79,12 +79,27 @@ def create_app(test_config=None):
     def create_question():
         body = request.form
 
-        question = body.get("question", None)
-        answer = body.get("answer", None)
-        difficulty = body.get("difficulty", None)
-        category = body.get("category", None)
+        search_term = body.get("searchTerm", None)
+
+        if search_term is not None:
+            selection = Question.query.filter(
+                Question.question.ilike("%{}%".format(search_term))
+            )
+            questions_found = paginate_questions(request, selection)
+
+            return jsonify(
+                {
+                    "questions": questions_found,
+                    "search_term": search_term,
+                }
+            )
 
         try:
+            question = body.get("question", None)
+            answer = body.get("answer", None)
+            difficulty = body.get("difficulty", None)
+            category = body.get("category", None)
+
             new_question = Question(
                 question=question,
                 answer=answer,
