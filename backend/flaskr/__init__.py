@@ -1,6 +1,7 @@
 import os
 from flask import Flask, request, abort, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from flask_cors import CORS
 import random
 
@@ -137,7 +138,20 @@ def create_app(test_config=None):
             }
         )
 
-    @app.route("/")
+    @app.route("/quizzes", methods=["POST"])
+    def retrieve_next_question():
+        body = request.get_json()
+        previous_questions = body.get("previous_questions")
+        category = body.get("quiz_category")
+        selection = Question.query.filter(Question.category == category).filter(
+            ~(Question.id.in_(previous_questions))).order_by(func.random()).limit(1)
+
+        return jsonify({
+            "success": True,
+            "question": selection[0].format()
+        })
+
+    @ app.route("/")
     def root():
         return "hello universe"
 
