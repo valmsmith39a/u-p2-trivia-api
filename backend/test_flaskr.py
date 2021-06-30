@@ -19,10 +19,10 @@ class TriviaTestCase(unittest.TestCase):
         setup_db(self.app, self.database_path)
 
         self.new_question = {
-            "question": "What is a duck?",
-            "answer": "A waterbird",
+            "question": "Who's on first?",
+            "answer": "John",
             "difficulty": 5,
-            "category": 3,
+            "category": 3
         }
         # binds the app to the current context
         with self.app.app_context():
@@ -68,9 +68,19 @@ class TriviaTestCase(unittest.TestCase):
     def test_create_question(self):
         res = self.client().post("/questions", json=self.new_question)
         data = json.loads(res.data)
+        new_question = data["created"]
+        del new_question["id"]
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
-        self.assertEqual(data["created"], 40)
+        self.assertDictEqual(new_question, self.new_question)
+        self.assertTrue(data["total_questions"])
+
+    def test_search_questions(self):
+        res = self.client().post("/questions", json={"searchTerm": "what"})
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data["success"], True)
+        self.assertEqual(len(data["questions"]), 9)
         self.assertTrue(data["total_questions"])
 
     def test_get_questions_by_category(self):

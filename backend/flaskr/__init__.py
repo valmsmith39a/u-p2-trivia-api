@@ -60,7 +60,8 @@ def create_app(test_config=None):
     @app.route("/questions/<int:question_id>", methods=["DELETE"])
     def delete_question(question_id):
         try:
-            question = Question.query.filter(question_id == Question.id).one_or_none()
+            question = Question.query.filter(
+                question_id == Question.id).one_or_none()
             # question.delete()
             selection = Question.query.order_by(Question.id).all()
             current_questions = paginate_questions(request, selection)
@@ -77,24 +78,25 @@ def create_app(test_config=None):
 
     @app.route("/questions", methods=["POST"])
     def create_question():
-        body = request.form
+        body = request.get_json()
 
         search_term = body.get("searchTerm", None)
 
-        if search_term is not None:
-            selection = Question.query.filter(
-                Question.question.ilike("%{}%".format(search_term))
-            )
-            questions_found = paginate_questions(request, selection)
-
-            return jsonify(
-                {
-                    "questions": questions_found,
-                    "search_term": search_term,
-                }
-            )
-
         try:
+            if search_term is not None:
+                selection = Question.query.filter(
+                    Question.question.ilike("%{}%".format(search_term))
+                ).all()
+                questions_found = paginate_questions(request, selection)
+
+                return jsonify(
+                    {
+                        "success": True,
+                        "questions": questions_found,
+                        "total_questions": len(selection),
+                    }
+                )
+
             question = body.get("question", None)
             answer = body.get("answer", None)
             difficulty = body.get("difficulty", None)
@@ -114,7 +116,7 @@ def create_app(test_config=None):
             return jsonify(
                 {
                     "success": True,
-                    "created": new_question.id,
+                    "created": new_question.format(),
                     "questions": current_questions,
                     "total_questions": len(selection),
                 }
@@ -125,7 +127,8 @@ def create_app(test_config=None):
 
     @app.route("/categories/<int:category_id>/questions")
     def retrieve_question_with_category(category_id):
-        selection = Question.query.filter(category_id == Question.category).all()
+        selection = Question.query.filter(
+            category_id == Question.category).all()
         return jsonify(
             {
                 "success": True,
