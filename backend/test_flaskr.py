@@ -101,6 +101,30 @@ class TriviaTestCase(unittest.TestCase):
         self.assertNotEqual(data["question"]["id"], 64)
         self.assertNotEqual(data["question"]["id"], 20)
 
+    def test_404_if_question_does_not_exist(self):
+        res = self.client().get("/questions/no-resource-here")
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(data["success"], False)
+        self.assertEqual(data["message"], "resource not found")
+
+    def test_422_unprocessable(self):
+        res = self.client().post('/questions', content_type='multipart/form-data',
+                                 data={"question": "test", "answer": "test ans", "category": 1})
+        data = json.loads(res.data)
+        self.assertEqual(data["error"], 422)
+        self.assertEqual(data["success"], False)
+        self.assertEqual(data["message"], "unprocessable")
+
+    def test_400_bad_request(self):
+        # trigger error with mispelling of "previous_questions"
+        res = self.client().post(
+            "/quizzes", json={"previous_question": [4], "quiz_category": 2})
+        data = json.loads(res.data)
+        self.assertEqual(data["error"], 400)
+        self.assertEqual(data["success"], False)
+        self.assertEqual(data["message"], "bad request")
+
 
 # Make the tests conveniently executable
 if __name__ == "__main__":

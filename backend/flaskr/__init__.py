@@ -37,14 +37,17 @@ def create_app(test_config=None):
 
     @app.route("/categories")
     def retrieve_categories():
-        selection = Category.query.order_by(Category.id).all()
-        return jsonify(
-            {
-                "success": True,
-                "categories": [category.format() for category in selection],
-                "total_categories": len(selection),
-            }
-        )
+        try:
+            selection = Category.query.order_by(Category.id).all()
+            return jsonify(
+                {
+                    "success": True,
+                    "categories": [category.format() for category in selection],
+                    "total_categories": len(selection),
+                }
+            )
+        except:
+            abort(422)
 
     @app.route("/questions")
     def retrieve_questions():
@@ -79,11 +82,10 @@ def create_app(test_config=None):
 
     @app.route("/questions", methods=["POST"])
     def create_question():
-        body = request.get_json()
-
-        search_term = body.get("searchTerm", None)
-
         try:
+            body = request.get_json()
+            search_term = body.get("searchTerm", None)
+
             if search_term is not None:
                 selection = Question.query.filter(
                     Question.question.ilike("%{}%".format(search_term))
@@ -143,12 +145,40 @@ def create_app(test_config=None):
         body = request.get_json()
         previous_questions = body.get("previous_questions")
         category = body.get("quiz_category")
+
+        if previous_questions is None or category is None:
+            abort(400)
+
         selection = Question.query.filter(Question.category == category).filter(
             ~(Question.id.in_(previous_questions))).order_by(func.random()).limit(1)
 
         return jsonify({
             "success": True,
             "question": selection[0].format()
+        })
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({
+            "success": False,
+            "error": 404,
+            "message": "resource not found"
+        }), 404
+
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({
+            "success": False,
+            "error": 400,
+            "message": "bad request"
+        })
+
+    @app.errorhandler(422)
+    def not_processed(error):
+        return jsonify({
+            "success": False,
+            "error": 422,
+            "message": "unprocessable"
         })
 
     @ app.route("/")
