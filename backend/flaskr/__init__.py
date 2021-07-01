@@ -86,7 +86,7 @@ def create_app(test_config=None):
         try:
             question = Question.query.filter(
                 question_id == Question.id).one_or_none()
-            # question.delete()
+            question.delete()
             selection = Question.query.order_by(Question.id).all()
             current_questions = paginate_questions(request, selection)
             return jsonify(
