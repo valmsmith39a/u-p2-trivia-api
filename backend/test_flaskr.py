@@ -54,14 +54,14 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
         self.assertTrue(len(data["questions"]))
-        self.assertTrue(data["total_questions"])
+        self.assertTrue(data["totalQuestions"])
 
     def test_delete_question(self):
-        res = self.client().delete("/questions/18")
+        res = self.client().delete("/questions/26")
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
-        self.assertEqual(data["deleted"], 18)
+        self.assertEqual(data["deleted"], 26)
         self.assertTrue(len(data["questions"]))
         self.assertTrue(data["total_questions"])
 
@@ -80,8 +80,8 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
-        self.assertEqual(len(data["questions"]), 9)
-        self.assertTrue(data["total_questions"])
+        self.assertEqual(len(data["questions"]), 10)
+        self.assertTrue(data["totalQuestions"])
 
     def test_get_questions_by_category(self):
         res = self.client().get("/categories/4/questions")
@@ -93,7 +93,7 @@ class TriviaTestCase(unittest.TestCase):
 
     def test_quizzes(self):
         res = self.client().post(
-            "/quizzes", json={"previous_questions": [64, 20], "quiz_category": 1})
+            "/quizzes", json={"previous_questions": [64, 20], "quiz_category": { "type": "Geography", "id": 1 }})
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["question"])
@@ -119,7 +119,7 @@ class TriviaTestCase(unittest.TestCase):
     def test_400_bad_request(self):
         # trigger error with mispelling of "previous_questions"
         res = self.client().post(
-            "/quizzes", json={"previous_question": [4], "quiz_category": 2})
+            "/quizzes", json={"previous_question": [4], "quiz_category": { "type": "Geography", "id": 1 }})
         data = json.loads(res.data)
         self.assertEqual(data["error"], 400)
         self.assertEqual(data["success"], False)
