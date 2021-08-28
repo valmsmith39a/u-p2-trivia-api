@@ -22,8 +22,9 @@ class TriviaTestCase(unittest.TestCase):
             "question": "Who's on first?",
             "answer": "John",
             "difficulty": 5,
-            "category": 3
+            "category": 3,
         }
+
         # binds the app to the current context
         with self.app.app_context():
             self.db = SQLAlchemy()
@@ -56,50 +57,99 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(len(data["questions"]))
         self.assertTrue(data["totalQuestions"])
 
-    def test_delete_question(self):
-        res = self.client().delete("/questions/26")
-        data = json.loads(res.data)
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(data["success"], True)
-        self.assertEqual(data["deleted"], 26)
-        self.assertTrue(len(data["questions"]))
-        self.assertTrue(data["total_questions"])
-
     def test_create_question(self):
         res = self.client().post("/questions", json=self.new_question)
         data = json.loads(res.data)
         new_question = data["created"]
-        del new_question["id"]
+        self.new_question["id"] = new_question["id"]
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
         self.assertDictEqual(new_question, self.new_question)
         self.assertTrue(data["total_questions"])
 
-    def test_search_questions(self):
-        res = self.client().post("/questions", json={"searchTerm": "what"})
+    def test_create_question_failure(self):
+        res = self.client().post("/questions")
+        data = json.loads(res.data)
+        self.assertEqual(data["error"], 422)
+        self.assertEqual(data["success"], False)
+        self.assertEqual(data["message"], "unprocessable")
+
+    def test_delete_question(self):
+        # select a question id that exists
+        res = self.client().get("/questions")
+        data = json.loads(res.data)
+        delete_id = data["questions"][0]["id"]
+
+        res = self.client().delete("/questions" + "/" + str(delete_id))
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
-        self.assertEqual(len(data["questions"]), 10)
+        self.assertEqual(data["deleted"], delete_id)
+        self.assertTrue(len(data["questions"]))
+        self.assertTrue(data["total_questions"])
+
+    def test_delete_question_failure(self):
+        res = self.client().delete("/questions/10000")
+        data = json.loads(res.data)
+        self.assertEqual(data["error"], 422)
+        self.assertEqual(data["success"], False)
+        self.assertEqual(data["message"], "unprocessable")
+
+    def test_search_questions(self):
+        res = self.client().post(
+            "/questions",
+            json={"searchTerm": "a new question"},
+        )
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data["success"], True)
+        self.assertTrue(len(data["questions"]))
         self.assertTrue(data["totalQuestions"])
 
+    def test_search_questions_failure(self):
+        res = self.client().post("/questions")
+        data = json.loads(res.data)
+        self.assertEqual(data["error"], 422)
+        self.assertEqual(data["success"], False)
+        self.assertEqual(data["message"], "unprocessable")
+
     def test_get_questions_by_category(self):
-        res = self.client().get("/categories/4/questions")
+        res = self.client().get("/categories/3/questions")
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
         self.assertTrue(len(data["questions"]))
         self.assertTrue(data["total_questions"])
 
+    def test_get_questions_by_category_failure(self):
+        res = self.client().get("/categories/9999/questions")
+        data = json.loads(res.data)
+
+        self.assertEqual(data["error"], 422)
+        self.assertEqual(data["success"], False)
+        self.assertEqual(data["message"], "unprocessable")
+
     def test_quizzes(self):
         res = self.client().post(
-            "/quizzes", json={"previous_questions": [64, 20], "quiz_category": { "type": "Geography", "id": 1 }})
+            "/quizzes",
+            json={
+                "previous_questions": [64, 20],
+                "quiz_category": {"type": "Art", "id": 2},
+            },
+        )
         data = json.loads(res.data)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(data["question"])
-        self.assertEqual(data["question"]["category"], 1)
+        self.assertEqual(data["question"]["category"], 2)
         self.assertNotEqual(data["question"]["id"], 64)
         self.assertNotEqual(data["question"]["id"], 20)
+
+    def test_quizzes_failure(self):
+        res = self.client().post("/quizzes")
+        data = json.loads(res.data)
+        self.assertEqual(data["error"], 422)
+        self.assertEqual(data["success"], False)
+        self.assertEqual(data["message"], "unprocessable")
 
     def test_404_if_question_does_not_exist(self):
         res = self.client().get("/questions/no-resource-here")
@@ -109,8 +159,11 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["message"], "resource not found")
 
     def test_422_unprocessable(self):
-        res = self.client().post('/questions', content_type='multipart/form-data',
-                                 data={"question": "test", "answer": "test ans", "category": 1})
+        res = self.client().post(
+            "/questions",
+            content_type="multipart/form-data",
+            data={"question": "test", "answer": "test ans", "category": 1},
+        )
         data = json.loads(res.data)
         self.assertEqual(data["error"], 422)
         self.assertEqual(data["success"], False)
@@ -119,7 +172,12 @@ class TriviaTestCase(unittest.TestCase):
     def test_400_bad_request(self):
         # trigger error with mispelling of "previous_questions"
         res = self.client().post(
-            "/quizzes", json={"previous_question": [4], "quiz_category": { "type": "Geography", "id": 1 }})
+            "/quizzes",
+            json={
+                "previous_question": [4],
+                "quiz_category": {"type": "Geography", "id": 1},
+            },
+        )
         data = json.loads(res.data)
         self.assertEqual(data["error"], 400)
         self.assertEqual(data["success"], False)
